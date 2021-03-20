@@ -23,6 +23,17 @@ class HookTests
     }
 
     @Test
+    @Tag("HookTests.copyTest")
+    void copyTest()
+    {
+        Hook hook = "test/test";
+        assertEquals(hook.packageName(), "test/test");
+
+        auto copy = hook;
+        assertEquals(copy.packageName(), "test/test");
+    }
+
+    @Test
     @Tag("HookTests.parseTest")
     void parseTest()
     {
@@ -31,6 +42,7 @@ class HookTests
 
         Hook.Status res = hook.parse(TESTS_ASSET_DIRECTORY);
         assertEquals(res, Hook.Status.Success);
+        assertTrue(hook.isValid());
 
         assertEquals(hook.phases(), ["compile", "instprep"]);
         bool equal = hook.phases() == ["instprep"];
