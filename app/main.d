@@ -6,6 +6,7 @@ import std.string;
 
 import config;
 import portage.hook;
+import portage.hook_database;
 
 void print_options(ref const Option[] options)
 {
@@ -168,8 +169,67 @@ int main(string[] args)
         showHooks = false;
     }
 
-    // DONE PARSING AND VALIDATING STUFF
-    // LETS GO
+    // DONE PARSING AND VALIDATING STUFF, LETS GO
 
-    return 0;
+    auto hook = HookDatabase.findHook(packageName);
+    if (hook is null)
+    {
+        if (debugOutput)
+        {
+            print_error("no hooks found for package %s", packageName);
+        }
+        return 0; // don't abort portage just because there were no hooks for the package
+    }
+
+    if (showHooks)
+    {
+        writefln("Available hooks for package: %s", packageName);
+        foreach (ref const phase; hook.phases())
+        {
+            writefln(" - %s", phase);
+        }
+
+        return 0;
+    }
+
+    if (run)
+    {
+        if (hook.hasPhase(ebuildPhase))
+        {
+            writefln("%s%s>>> Running %s hook for [%s]...%s",
+                "\033[1m", "\033[38;2;188;18;160m", ebuildPhase, packageName, "\033[0m");
+        }
+        auto exitStatus = hook.run(ebuildPhase);
+
+        if (debugOutput)
+        {
+            if (exitStatus == Hook.EbuildPhaseNotPresent)
+            {
+                print_error("no %s hook found for package %s", ebuildPhase, packageName);
+            }
+            else if (exitStatus == Hook.HookNotParsed)
+            {
+                print_error("hook not parsed yet");
+            }
+            else if (exitStatus == Hook.InsufficientEnvironment)
+            {
+                print_error("not running inside portage!");
+            }
+        }
+
+        // normalize exit status for better integration into portage
+        // cancel merge when non-zero exit status for example
+        if (exitStatus == Hook.EbuildPhaseNotPresent)
+        {
+            exitStatus = 0;
+        }
+        else if (exitStatus < 0)
+        {
+            exitStatus = 255;
+        }
+
+        return exitStatus;
+    }
+
+    return 255;
 }
