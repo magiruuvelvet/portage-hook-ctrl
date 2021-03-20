@@ -4,8 +4,11 @@ import std.string;
 import std.array;
 import std.regex;
 import std.algorithm;
+import std.format;
+import std.process : environment;
 import io = std.file;
 import fs = utils.filesystem;
+import core.stdc.stdlib;
 
 struct Hook
 {
@@ -21,6 +24,10 @@ public:
         ExeFileNotFound,        /// the hook has no executable to run
         ExeFileNotRunnable,     /// the hook executable is not runnable
     }
+
+    enum EbuildPhaseNotPresent = -1;
+    enum HookNotParsed = -2;
+    enum InsufficientEnvironment = -3;
 
 public:
     /++
@@ -80,7 +87,7 @@ public:
      +/
     static bool validatePackageName(in string pkgName)
     {
-        static immutable string portage_pkg_name_validator = r"^\w+\/\w+$";
+        static immutable string portage_pkg_name_validator = r"^[\w\-]+\/[\w\-]+$";
         auto match = pkgName.matchAll(portage_pkg_name_validator);
         return cast(bool) match;
     }
@@ -175,6 +182,49 @@ public:
         this._valid = true;
 
         return Status.Success;
+    }
+
+    /++
+     + Runs the hook executable and returns its exit status.
+     + Output is printed into the console.
+     +
+     + If the exit status is negative the following errors ocurred:
+     +
+     + - `-1` ebuild phase not present in hook
+     + - `-2` the hook wasn't parsed yet
+     + - `-3` insufficient environment (not running inside portage)
+     +/
+    int run(in string phase) const
+    {
+        // hook wasn't parsed yet
+        if (!this._valid)
+        {
+            return -2;
+        }
+
+        // don't do anything if the hook didn't registered support for the given phase
+        if (!this.hasPhase(phase))
+        {
+            return -1;
+        }
+
+        // should not happen, but make sure the exe path is not empty
+        if (this._exe.length == 0)
+        {
+            return -2;
+        }
+
+        // check for some environment variables to be present
+        if ("ED" !in environment ||
+            "PN" !in environment ||
+            "EBUILD_PHASE" !in environment)
+        {
+            return -3;
+        }
+
+        // use system() instead of execute() to instantly have the output printed in real time
+        const string command = format("%s %s", this._exe, phase);
+        return system(toStringz(command)) >> 8;
     }
 
 private:
