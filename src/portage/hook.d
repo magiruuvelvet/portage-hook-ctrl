@@ -143,7 +143,7 @@ public:
             string[] phasesRaw = contents.splitLines();
 
             // insert all non-empty lines into the ebuild phases array
-            foreach (const string phase; phasesRaw)
+            foreach (ref const phase; phasesRaw)
             {
                 const string phaseStripped = phase.strip();
                 if (phaseStripped.length != 0)
@@ -186,3 +186,5 @@ private:
     // state variables
     bool _valid = false;
 }
+
+alias HookStatus = Hook.Status;

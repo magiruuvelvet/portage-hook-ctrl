@@ -1,0 +1,8 @@
+module config;
+
+static struct Config
+{
+    @disable this();
+    static immutable string Version = "${APPLICATION_VERSION}";
+    static immutable string PortageHookDir = "${PORTAGE_HOOK_DIR}";
+}
