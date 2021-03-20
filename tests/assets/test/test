@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# print given ebuild phase
+echo $1
