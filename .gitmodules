@@ -1,0 +1,9 @@
+[submodule "cmake/modules"]
+	path = cmake/modules
+	url = https://github.com/magiruuvelvet/shared-cmake-modules.git
+[submodule "tests/dunit/dunit"]
+	path = tests/dunit/dunit
+	url = https://github.com/linkrope/dunit
+[submodule "tests/dunit/undead"]
+	path = tests/dunit/undead
+	url = https://github.com/dlang/undead

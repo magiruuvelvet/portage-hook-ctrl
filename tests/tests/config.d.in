@@ -1,0 +1,7 @@
+module tests.config;
+
+/// the cmake build type which was used to build the project
+immutable string CMAKE_BUILD_TYPE = "${CMAKE_BUILD_TYPE}";
+
+/// directory where unit test assets are located, directory is not stable
+immutable string TESTS_ASSET_DIRECTORY = "${TESTS_ASSET_DIRECTORY}";
