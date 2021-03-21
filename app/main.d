@@ -177,6 +177,7 @@ int main(string[] args)
         if (debugOutput)
         {
             print_error("no hooks found for package %s", packageName);
+            stderr.writefln("%s", HookDatabase.lastErrorMessage());
         }
         return 0; // don't abort portage just because there were no hooks for the package
     }

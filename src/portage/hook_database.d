@@ -11,6 +11,20 @@ static struct HookDatabase
     /// stores the last error of the `findHook()` function
     static HookStatus lastError = HookStatus.Success;
 
+    static string lastErrorMessage()
+    {
+        final switch (lastError)
+        {
+            case HookStatus.Success:                return "";
+            case HookStatus.InvalidPath:            return "invalid path";
+            case HookStatus.InvalidPackageName:     return "invalid package name";
+            case HookStatus.DefinitionFileNotFound: return "hook definition file not found";
+            case HookStatus.DefinitionFileInvalid:  return "hook definition file invalid";
+            case HookStatus.ExeFileNotFound:        return "executable not found";
+            case HookStatus.ExeFileNotRunnable:     return "executable is not runnable";
+        }
+    }
+
     /++
      + Finds and parses the hook for the given package name.
      +
