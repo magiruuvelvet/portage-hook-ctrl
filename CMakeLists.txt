@@ -7,6 +7,9 @@ include(EnableD)
 project(portage-hook-ctrl D)
 include(ProjectSetup)
 
+# dependences
+add_subdirectory(libs)
+
 # application code
 add_subdirectory(src)
 

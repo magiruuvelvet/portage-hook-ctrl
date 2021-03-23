@@ -7,3 +7,6 @@
 [submodule "tests/dunit/undead"]
 	path = tests/dunit/undead
 	url = https://github.com/dlang/undead
+[submodule "libs/argparse-d"]
+	path = libs/argparse-d
+	url = https://github.com/magiruuvelvet/argparse-d

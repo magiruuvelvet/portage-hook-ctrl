@@ -1,75 +1,10 @@
 import std.stdio;
-import std.array;
-import std.getopt;
-import std.format;
 import std.string;
 
 import config;
 import portage.hook;
 import portage.hook_database;
-
-void print_options(ref const Option[] options)
-{
-    writeln("Usage: portage-hook-ctrl [options]");
-    writeln("Options:");
-
-    struct Switch
-    {
-        string switches;
-        string help;
-    }
-
-    Switch[] switches;
-    foreach (ref const option; options)
-    {
-        string build_switches_part()
-        {
-            string part;
-            if (option.optShort.length != 0)
-            {
-                part ~= option.optShort;
-                if (option.optLong.length != 0)
-                {
-                    part ~= ", ";
-                }
-            }
-            if (option.optLong.length != 0)
-            {
-                part ~= option.optLong;
-            }
-            return part;
-        }
-
-        switches ~= [Switch(build_switches_part(), option.help)];
-    }
-
-    // remove default injected uncustomizable help option from getopt
-    if (options[options.length - 1].optLong == "--help")
-    {
-        switches = switches[0..switches.length - 1];
-    }
-
-    // find longest switch
-    ulong length = 0;
-    foreach (ref const sw; switches)
-    {
-        if (sw.switches.length > length)
-        {
-            length = sw.switches.length;
-        }
-    }
-
-    // print all options
-    foreach (ref const sw; switches)
-    {
-        writef("    %s", sw.switches);
-        for (auto i = 0; i < length - sw.switches.length; ++i)
-        {
-            write(" ");
-        }
-        writefln("        %s", sw.help);
-    }
-}
+import argparse;
 
 void print_error(Args...)(in string fmt, Args args)
 {
@@ -78,50 +13,41 @@ void print_error(Args...)(in string fmt, Args args)
 
 int main(string[] args)
 {
-    bool optionHelp = false;
-    bool optionVersion = false;
-    string packageName = "\0\0\0";
-    string ebuildPhase = "\0\0\0";
-    bool showHooks = true;
-    bool run = false;
-    bool debugOutput = false;
-
     // parse command line options
-    // PERSONAL NOTE: look for a better command line parsing library for D, getopt sucks and has shitty defaults
-    //                it also injects a help option by default with no way to turn it off or even customize it
-    //                there is also no way to check for the presence of options, when an emptry string is valid for example
-    ///               but the option must be explicitly provided on the command line
-    const auto options = ((){
-        try {
-            return getopt(
-                args,
-                std.getopt.config.passThrough,
-                std.getopt.config.caseSensitive,
-                "help|h",       "Show this help and quit.", &optionHelp,
-                "version|v",    "Show application version and quit.", &optionVersion,
-                "pkg|p",        "Package category and name separated with a forward slash.", &packageName,
-                "phase",        "Current ebuild phase.", &ebuildPhase,
-                "show-hooks",   "Show available hooks for the given package. (default)", &showHooks,
-                "run",          "Runs the current hook.", &run,
-                "debug",        "Print messages which are hidden by default to avoid spamming the emerge output.", &debugOutput,
-            );
-        } catch (Exception e) {
-            // this is an ugly hack, see personal note above
-            return GetoptResult(false, [Option("", "", e.message.dup)]);
-        }
-    }());
+    ArgumentParser parser = args;
+    parser.addHelpOption("Show this help and quit.");
+    parser.addArgument("v", "version",      "Show application version and quit.", Argument.Boolean);
+    parser.addArgument("p", "pkg",          "Package category and name separated with a forward slash.");
+    parser.addArgument("",  "phase",        "Current ebuild phase.");
+    parser.addArgument("",  "show-hooks",   "Show available hooks for the given package. (default)", Argument.Boolean);
+    parser.addArgument("",  "run",          "Runs the current hook.", Argument.Boolean);
+    parser.addArgument("",  "debug",        "Print messages which are hidden by default to avoid spamming the emerge output.", Argument.Boolean);
+
+    const auto res = parser.parse();
 
     // check if error ocurred during parsing
-    if (options.options.length == 1)
+    if (res != ArgumentParserResult.Success)
     {
-        print_error("error ocurred during command line parsing: %s", options.options[0].help);
+        print_error("error ocurred during command line parsing: %s", res);
         return 1;
     }
+
+    // receive command line options
+    const bool optionHelp = parser.exists("help");
+    const bool optionVersion = parser.exists("version");
+          string packageName = parser.get("pkg");
+          string ebuildPhase = parser.get("phase");
+    const bool ebuildPhasePresent = parser.exists("phase");
+          bool showHooks = true;
+    const bool run = parser.exists("run");
+    const bool debugOutput = parser.exists("debug");
 
     // print help output if requested and exit
     if (optionHelp)
     {
-        print_options(options.options);
+        writeln("Usage: portage-hook-ctrl [options]");
+        writeln("Options:");
+        writeln(parser.help(true));
         return 0;
     }
 
@@ -135,12 +61,6 @@ int main(string[] args)
     // sanitize and/or normalize user input
     packageName = packageName.strip();
     ebuildPhase = ebuildPhase.strip();
-
-    // HACK: check for option presence using a hack
-    bool packageNamePresent = false;
-    bool ebuildPhasePresent = false;
-    if (packageName != "\0\0\0") packageNamePresent = true;
-    if (ebuildPhase != "\0\0\0") ebuildPhasePresent = true;
 
     // validate given package name
     if (!Hook.validatePackageName(packageName))
