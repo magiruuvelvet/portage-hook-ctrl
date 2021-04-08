@@ -87,7 +87,7 @@ public:
      +/
     static bool validatePackageName(in string pkgName)
     {
-        static immutable string portage_pkg_name_validator = r"^[\w\-]+\/[\w\-]+$";
+        static immutable string portage_pkg_name_validator = r"^[\w\-\+]+\/[\w\-\+]+$";
         auto match = pkgName.matchAll(portage_pkg_name_validator);
         return cast(bool) match;
     }

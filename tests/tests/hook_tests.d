@@ -55,4 +55,26 @@ class HookTests
         assertFalse(hook.hasPhase(""));
         assertFalse(hook.hasPhase("prepare"));
     }
+
+    @Test
+    @Tag("HookTests.packageNameValidatorTest")
+    void packageNameValidatorTest()
+    {
+        assertTrue(Hook.validatePackageName("test/test"));
+        assertTrue(Hook.validatePackageName("test/test2"));
+        assertTrue(Hook.validatePackageName("test/test+"));
+        assertTrue(Hook.validatePackageName("test+/test"));
+        assertTrue(Hook.validatePackageName("test2/test"));
+        assertTrue(Hook.validatePackageName("dev-test2/test"));
+        assertTrue(Hook.validatePackageName("dev-test2/dev-test"));
+
+        assertFalse(Hook.validatePackageName("test/"));
+        assertFalse(Hook.validatePackageName("/test"));
+        assertFalse(Hook.validatePackageName("test"));
+        assertFalse(Hook.validatePackageName("/"));
+
+        assertFalse(Hook.validatePackageName("test//"));
+        assertFalse(Hook.validatePackageName("test//test"));
+        assertFalse(Hook.validatePackageName("test/??"));
+    }
 }
